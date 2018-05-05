@@ -4,55 +4,62 @@ import retrofit2.Retrofit;
 
 import retrofit2.converter.gson.GsonConverterFactory;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.PriorityQueue;
 
 import static java.util.stream.Collectors.toList;
 
 public class Main {
 
-    private final static int EXPECTED_COUNT_OF_COURSES = 3000;
+    private final static int EXPECTED_COURSES_COUNT = 3000;
+    private final static String STEPIK_URL = "https://stepic.org";
+    private static int n;
 
     private static StepikApi stepikApi;
+    private static Comparator<Pair<String,Integer>> cmpPair = Comparator.comparingInt(Pair::getValue);
 
     public static void main(String[] args) {
-        int n = 10;
+        n = Integer.parseInt(args[0]);
         initRetrofit();
-        List<Pair<String, Integer>> courses = getListCourses();
-        printNFavoriteCourses(courses, n);
+        PriorityQueue<Pair<String, Integer>> courses = getListCourses();
+        printFavoriteCourses(courses);
     }
 
-    private static void printNFavoriteCourses(List<Pair<String, Integer>> courses, int n) {
-        courses.sort((a, b) -> 0 - Integer.compare(a.getValue(), b.getValue()));
-        for(int i = 0; i < Math.min(n, courses.size()); i++) {
-            System.out.println(i + 1 + ") " + courses.get(i).getKey() + " : " + courses.get(i).getValue());
+    private static void printFavoriteCourses(PriorityQueue<Pair<String, Integer>> courses) {
+        int ind = n;
+        while(!courses.isEmpty()) {
+            Pair<String, Integer> pair = courses.poll();
+            System.out.println(n-- + ") " + pair.getKey() + " : " + pair.getValue());
         }
     }
 
-    private static List<Pair<String, Integer>> getListCourses() {
+    private static PriorityQueue<Pair<String, Integer>> getListCourses() {
         int numPage = 1;
-//        int count = 1;
-        List<Pair<String, Integer>> coursesAns = new ArrayList<>(EXPECTED_COUNT_OF_COURSES);
+        PriorityQueue<Pair<String, Integer>> pq = new PriorityQueue<>(Math.min(n + 1, EXPECTED_COURSES_COUNT), cmpPair);
+
         while (true) {
             Response<JsonModel> response;
             try {
                 response = stepikApi.getPage(numPage).execute();
             } catch (IOException e) {
-                throw new RuntimeException("An error was occurred when get page.");
+                throw new RuntimeException("An error was occurred when get page.", e);
             }
             if (response != null && response.isSuccessful()) {
                 JsonModel json = response.body();
                 List<JsonModel.Course> courses = json.getCourses();
 
-                coursesAns.addAll(courses.stream()
-                        .map(course -> new Pair<>(course.getTitle(), course.getLearnersCount()))
-                        .collect(toList()));
-//                for (JsonModel.Course it : courses) {
-//                    System.out.println(count++ + ") " + it.getTitle() + " : " + it.getLearnersCount());
-//                }
+                for(JsonModel.Course it : courses) {
+                    if(pq.size() < n || pq.peek().getValue().compareTo(it.getLearnersCount()) < 0) {
+                        pq.add(new Pair<>(it.getTitle(), it.getLearnersCount()));
+                        if(pq.size() > n){
+                            pq.poll();
+                        }
+                    }
+                }
+
                 numPage++;
                 if (!json.getMeta().hasNext()) {
                     break;
@@ -62,14 +69,14 @@ public class Main {
             }
 
         }
-        return coursesAns;
+        return pq;
 
     }
 
     private static void initRetrofit() {
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://stepic.org")
+                .baseUrl(STEPIK_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         stepikApi = retrofit.create(StepikApi.class);

@@ -6,11 +6,13 @@ import java.util.List;
 public class JsonModel {
 
     public class Course {
+
+        @Expose
         @SerializedName("title")
-        @Expose
         private String title;
-        @SerializedName("learners_count")
+
         @Expose
+        @SerializedName("learners_count")
         private int learners_count;
 
         public String getTitle() {
@@ -31,15 +33,10 @@ public class JsonModel {
     }
 
     public class Meta {
+
+        @Expose
         @SerializedName("has_next")
-        @Expose
         private boolean has_next;
-        @SerializedName("has_previous")
-        @Expose
-        private boolean has_previous;
-        @SerializedName("page")
-        @Expose
-        private int page;
 
         public boolean hasNext() {
             return has_next;
@@ -49,28 +46,15 @@ public class JsonModel {
             this.has_next = has_next;
         }
 
-        public boolean hasPrevious() {
-            return has_previous;
-        }
-
-        public void setHasPrevious(boolean has_previous) {
-            this.has_previous = has_previous;
-        }
-
-        public int getPage() {
-            return page;
-        }
-
-        public void setPage(int page) {
-            this.page = page;
-        }
     }
 
+
+    @Expose
     @SerializedName("courses")
-    @Expose
     private List<Course> courses;
-    @SerializedName("meta")
+
     @Expose
+    @SerializedName("meta")
     private Meta meta;
 
     public Meta getMeta() {
