@@ -8,36 +8,43 @@ import java.io.IOException;
 import java.util.List;
 
 public class Main {
-    private static StepikApi stepikApi;
+
 
     public static void main(String[] args) {
-
+        StepikApi stepikApi;
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://stepic.org")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         stepikApi = retrofit.create(StepikApi.class);
         int i = 1;
-
-        Response<JsonModel> response = null;
-        try {
-            response = getApi().getPage(i).execute();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        if (response != null && response.isSuccessful()) {
-            JsonModel json = response.body();
-            List<JsonModel.Course> courses = json.getCourses();
-            for (JsonModel.Course it: courses ) {
-                System.out.println(it.getTitle() + " " + it.getLearnersCount());
-
+        int num = 1;
+        while (true) {
+            Response<JsonModel> response = null;
+            try {
+                response = stepikApi.getPage(i).execute();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+            if (response != null && response.isSuccessful()) {
+                JsonModel json = response.body();
+                List<JsonModel.Course> courses = json.getCourses();
+                for (JsonModel.Course it : courses) {
+                    System.out.println(num++ + ") " + it.getTitle() + " : " + it.getLearnersCount());
+
+                }
+                i++;
+                if(!json.getMeta().hasNext()) {
+                    break;
+                }
+            } else {
+                throw new RuntimeException("An error was occurred when get response. ");
+            }
+
         }
 
 
     }
 
-    private static StepikApi getApi() {
-        return stepikApi;
-    }
+
 }
