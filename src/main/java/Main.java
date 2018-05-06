@@ -18,10 +18,10 @@ public class Main {
     private static Comparator<Pair<String, Integer>> cmpPair = Comparator.comparingInt(Pair::getValue);
 
     public static void main(String[] args) {
-        if (args == null || args.length != 1 || args[0] == null || !args[0].matches("\\d+")) {
+        if (args == null || args.length != 1 || args[0] == null ||
+                !args[0].matches("\\d+") || (n = Integer.parseInt(args[0])) == 0) {
             throw new RuntimeException("Invalid arguments. Expected {N - count favorite courses that need print}");
         }
-        n = Integer.parseInt(args[0]);
 
         initRetrofit();
         PriorityQueue<Pair<String, Integer>> courses = getListCourses();
@@ -30,7 +30,7 @@ public class Main {
 
     private static void printFavoriteCourses(PriorityQueue<Pair<String, Integer>> courses) {
         int ind = courses.size();
-
+        System.out.println("№) Название курса : Количество слушателей");
         while (!courses.isEmpty()) {
             Pair<String, Integer> pair = courses.poll();
             System.out.println(ind-- + ") " + pair.getKey() + " : " + pair.getValue());
