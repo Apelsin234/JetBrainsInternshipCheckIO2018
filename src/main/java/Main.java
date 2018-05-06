@@ -18,11 +18,12 @@ public class Main {
     private static Comparator<Pair<String, Integer>> cmpPair = Comparator.comparingInt(Pair::getValue);
 
     public static void main(String[] args) {
-        if (args == null || args.length != 1 || args[0] == null ||
-                !args[0].matches("\\d+") || (n = Integer.parseInt(args[0])) == 0) {
+        if (args == null || args.length != 1 || args[0] == null || !args[0].matches("\\d+") ) {
             throw new RuntimeException("Invalid arguments. Expected {N - count favorite courses that need print}");
         }
-
+        if((n = Integer.parseInt(args[0])) == 0) {
+            return;
+        }
         initRetrofit();
         PriorityQueue<Pair<String, Integer>> courses = getListCourses();
         printFavoriteCourses(courses);
