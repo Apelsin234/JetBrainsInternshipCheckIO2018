@@ -1,4 +1,6 @@
 import javafx.util.Pair;
+import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -7,6 +9,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.concurrent.Phaser;
 
 public class Main {
 
@@ -18,6 +21,8 @@ public class Main {
     private static Comparator<Pair<String, Integer>> cmpPair = Comparator.comparingInt(Pair::getValue);
 
     public static void main(String[] args) {
+
+        long startTime = System.currentTimeMillis();
         if (args == null || args.length != 1 || args[0] == null || !args[0].matches("\\d+")) {
             throw new RuntimeException("Invalid arguments. Expected {N - count favorite courses that need print}");
         }
@@ -26,6 +31,8 @@ public class Main {
         initRetrofit();
         PriorityQueue<Pair<String, Integer>> courses = getListCourses();
         printFavoriteCourses(courses);
+        long timeSpent = System.currentTimeMillis() - startTime;
+        System.out.println("Время выполнения - " + timeSpent);
     }
 
     private static void printFavoriteCourses(PriorityQueue<Pair<String, Integer>> courses) {
@@ -37,39 +44,44 @@ public class Main {
         }
     }
 
+
     private static PriorityQueue<Pair<String, Integer>> getListCourses() {
-        int numPage = 1;
+        int numPage;
         PriorityQueue<Pair<String, Integer>> pqCourses = new PriorityQueue<>(Math.min(n + 1, EXPECTED_COURSES_COUNT), cmpPair);
+        Phaser phaser = new Phaser(269);
+        for(numPage = 1; numPage < 269; numPage++) {
 
-        while (true) {
-            Response<JsonModel> response;
-            try {
-                response = stepikApi.getPage(numPage++).execute();
+                stepikApi.getPage(numPage).enqueue(new Callback<JsonModel>() {
+                    @Override
+                    public void onResponse(Call<JsonModel> call, Response<JsonModel> response) {
+                        if (response != null && response.isSuccessful()) {
+                            JsonModel json = response.body();
+                            List<JsonModel.Course> courses = json.getCourses();
 
-                if (response != null && response.isSuccessful()) {
-                    JsonModel json = response.body();
-                    List<JsonModel.Course> courses = json.getCourses();
-
-                    for (JsonModel.Course it : courses) {
-                        if (pqCourses.size() < n || pqCourses.peek().getValue().compareTo(it.getLearnersCount()) < 0) {
-                            pqCourses.add(new Pair<>(it.getTitle(), it.getLearnersCount()));
-                            if (pqCourses.size() > n) {
-                                pqCourses.poll();
+                            for (JsonModel.Course it : courses) {
+                                synchronized (pqCourses) {
+                                    if (pqCourses.size() < n || pqCourses.peek().getValue().compareTo(it.getLearnersCount()) < 0) {
+                                        pqCourses.add(new Pair<>(it.getTitle(), it.getLearnersCount()));
+                                        if (pqCourses.size() > n) {
+                                            pqCourses.poll();
+                                        }
+                                    }
+                                }
                             }
+                        } else {
+                            throw new RuntimeException("Response has null value or we call invalid page");
                         }
+                        phaser.arrive();
                     }
 
-                    if (!json.getMeta().hasNext()) {
-                        break;
+                    @Override
+                    public void onFailure(Call<JsonModel> call, Throwable t) {
+                        throw new RuntimeException("An error occurred during networking", t);
                     }
-                } else {
-                    throw new RuntimeException("Response has null value or we call invalid page");
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("An error occurred during networking", e);
-            }
+                });
 
         }
+        phaser.arriveAndAwaitAdvance();
         return pqCourses;
 
     }
