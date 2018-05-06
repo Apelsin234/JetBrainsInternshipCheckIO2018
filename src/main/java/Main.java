@@ -28,7 +28,9 @@ public class Main {
         }
         Main main = new Main();
 
-        main.n = Integer.parseInt(args[0]);
+        if((main.n = Integer.parseInt(args[0])) == 0){
+            return ;
+        }
 
         main.initRetrofit();
         PriorityQueue<Pair<String, Integer>> courses = main.getListCourses();
@@ -39,7 +41,7 @@ public class Main {
 
     private void printFavoriteCourses(PriorityQueue<Pair<String, Integer>> courses) {
         int ind = courses.size();
-
+        System.out.println("№) Название курса : Количество слушателей");
         while (!courses.isEmpty()) {
             Pair<String, Integer> pair = courses.poll();
             System.out.println(ind-- + ") " + pair.getKey() + " : " + pair.getValue());
