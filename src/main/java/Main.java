@@ -12,16 +12,17 @@ public class Main {
 
     private final static int EXPECTED_COURSES_COUNT = 3000;
     private final static String STEPIK_URL = "https://stepic.org";
+    private static final String OUTPUT_TITLE = "№) НазваниеНазвание курса : Количество слушателей";
 
     private static int n;
     private static StepikApi stepikApi;
     private static Comparator<Pair<String, Integer>> cmpPair = Comparator.comparingInt(Pair::getValue);
 
     public static void main(String[] args) {
-        if (args == null || args.length != 1 || args[0] == null || !args[0].matches("\\d+") ) {
+        if (args == null || args.length != 1 || args[0] == null || !args[0].matches("\\d+")) {
             throw new RuntimeException("Invalid arguments. Expected {N - count favorite courses that need print}");
         }
-        if((n = Integer.parseInt(args[0])) == 0) {
+        if ((n = Integer.parseInt(args[0])) == 0) {
             return;
         }
         initRetrofit();
@@ -31,7 +32,7 @@ public class Main {
 
     private static void printFavoriteCourses(PriorityQueue<Pair<String, Integer>> courses) {
         int ind = courses.size();
-        System.out.println("№) Название курса : Количество слушателей");
+        System.out.println(OUTPUT_TITLE);
         while (!courses.isEmpty()) {
             Pair<String, Integer> pair = courses.poll();
             System.out.println(ind-- + ") " + pair.getKey() + " : " + pair.getValue());
