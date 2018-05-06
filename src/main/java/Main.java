@@ -15,6 +15,9 @@ public class Main {
 
     private static final int EXPECTED_COURSES_COUNT = 3000;
     private static final String STEPIK_URL = "https://stepic.org";
+    private static final String OUTPUT_TITLE = "№) НазваниеНазвание курса : Количество слушателей";
+    private static final String TIME_EX = "Время выполнения";
+
 
     private int n;
     private StepikApi stepikApi;
@@ -28,27 +31,27 @@ public class Main {
         }
         Main main = new Main();
 
-        if((main.n = Integer.parseInt(args[0])) == 0){
-            return ;
+        if ((main.n = Integer.parseInt(args[0])) == 0) {
+            return;
         }
 
         main.initRetrofit();
         PriorityQueue<Pair<String, Integer>> courses = main.getListCourses();
         main.printFavoriteCourses(courses);
         long timeSpent = System.currentTimeMillis() - startTime;
-        System.out.println("Время выполнения - " + timeSpent);
+        System.out.println(TIME_EX + timeSpent);
     }
 
     private void printFavoriteCourses(PriorityQueue<Pair<String, Integer>> courses) {
         int ind = courses.size();
-        System.out.println("№) Название курса : Количество слушателей");
+        System.out.println(OUTPUT_TITLE);
         while (!courses.isEmpty()) {
             Pair<String, Integer> pair = courses.poll();
             System.out.println(ind-- + ") " + pair.getKey() + " : " + pair.getValue());
         }
     }
 
-    private boolean foo(final Response<JsonModel> response, final PriorityQueue<Pair<String, Integer>> pqCourses) {
+    private boolean putCoursesToPriorityQ(final Response<JsonModel> response, final PriorityQueue<Pair<String, Integer>> pqCourses) {
         if (response != null && response.isSuccessful()) {
             JsonModel json = response.body();
             List<JsonModel.Course> courses = json.getCourses();
@@ -82,15 +85,16 @@ public class Main {
         Response<JsonModel> response;
         while (true) {
             try {
-                response = stepikApi.getPage(numPage + step - 1).execute();
-                if (foo(response, pqCourses)) {
+                int lastPage = numPage + step - 1;
+                response = stepikApi.getPage(lastPage).execute();
+                if (putCoursesToPriorityQ(response, pqCourses)) {
                     phaser.bulkRegister(step - 1);
-                    addTasks(numPage, numPage + step - 1, pqCourses, phaser);
+                    addTasks(numPage, lastPage, pqCourses, phaser);
                     numPage += step;
                 } else {
                     do {
                         response = stepikApi.getPage(numPage++).execute();
-                    } while (foo(response, pqCourses));
+                    } while (putCoursesToPriorityQ(response, pqCourses));
                     break;
                 }
             } catch (IOException e) {
@@ -126,7 +130,7 @@ public class Main {
 
         @Override
         public void onResponse(Call<JsonModel> call, Response<JsonModel> response) {
-            foo(response, pqCourses);
+            putCoursesToPriorityQ(response, pqCourses);
             phaser.arrive();
         }
 
